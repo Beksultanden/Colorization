@@ -1,0 +1,21 @@
+# Игнорируем папки с данными и временными файлами
+checkpoints/
+example_bbox/
+fotki_for_viktorskop/
+img_for_grad_vektorskop/
+img_for_makale/
+train_data/
+
+# Игнорируем временные файлы Python
+*.pyc
+__pycache__/
+
+# Игнорируем чекпоинты Jupyter
+.ipynb_checkpoints/
+
+# Игнорируем виртуальные окружения
+venv/
+.env
+
+# Игнорируем системные файлы macOS
+.DS_Store
