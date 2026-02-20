@@ -13,14 +13,15 @@ class ColorDataset(BaseDataset):
         self.opt = opt
         self.root = opt.dataroot
         self.dir_A = os.path.join(opt.dataroot)
-
+        
+        # Получаем список всех файлов
         self.A_paths = make_dataset(self.dir_A)
-
         self.A_paths = sorted(self.A_paths)
 
         self.transform = get_transform(opt)
 
     def __getitem__(self, index):
+        # берем путь к изображению
         A_path = self.A_paths[index]
         A_img = Image.open(A_path).convert('RGB')
         A = self.transform(A_img)
