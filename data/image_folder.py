@@ -11,6 +11,7 @@ from PIL import Image
 import os
 import os.path
 
+# формат изображений
 IMG_EXTENSIONS = [
     '.jpg', '.JPG', '.jpeg', '.JPEG',
     '.png', '.PNG', '.ppm', '.PPM', '.bmp', '.BMP',
@@ -18,10 +19,12 @@ IMG_EXTENSIONS = [
 
 
 def is_image_file(filename):
+    # Проверка является ли файл изображением
     return any(filename.endswith(extension) for extension in IMG_EXTENSIONS)
 
 
 def make_dataset(dir):
+    # Проходим по папке и собираем все пути к изображениям
     images = []
     assert os.path.isdir(dir), '%s is not a valid directory' % dir
 
@@ -35,6 +38,7 @@ def make_dataset(dir):
 
 
 def default_loader(path):
+    # Загружаем изображение в RGB
     return Image.open(path).convert('RGB')
 
 
@@ -42,6 +46,7 @@ class ImageFolder(data.Dataset):
 
     def __init__(self, root, transform=None, return_paths=False,
                  loader=default_loader):
+        # Собираем список изображений
         imgs = make_dataset(root)
         if len(imgs) == 0:
             raise(RuntimeError("Found 0 images in: " + root + "\n"
@@ -55,8 +60,10 @@ class ImageFolder(data.Dataset):
         self.loader = loader
 
     def __getitem__(self, index):
+        # Загружаем изображение по индексу
         path = self.imgs[index]
         img = self.loader(path)
+        # если есть transform то применяем,
         if self.transform is not None:
             img = self.transform(img)
         if self.return_paths:
