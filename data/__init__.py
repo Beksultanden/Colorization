@@ -80,3 +80,9 @@ class CustomDatasetDataLoader(BaseDataLoader):
             if i * self.opt.batch_size >= self.opt.max_dataset_size:
                 break
             yield data
+
+
+    #def load_data(self):
+        # Просто возвращаем сам объект
+        #return self
+
