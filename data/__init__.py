@@ -15,13 +15,16 @@ def find_dataset_using_name(dataset_name):
     # In the file, the class called DatasetNameDataset() will
     # be instantiated. It has to be a subclass of BaseDataset,
     # and it is case-insensitive.
+    # поист внутри файла класс датасета
     dataset = None
     target_dataset_name = dataset_name.replace('_', '') + 'dataset'
     for name, cls in datasetlib.__dict__.items():
+        # Проверяем совпадение имени без учета регистра
+        # И убеждаемся что класс наследуется от BaseDataset
         if name.lower() == target_dataset_name.lower() \
            and issubclass(cls, BaseDataset):
             dataset = cls
-
+    # Если класс не найден
     if dataset is None:
         print("In %s.py, there should be a subclass of BaseDataset with class name that matches %s in lowercase." % (dataset_filename, target_dataset_name))
         exit(0)
@@ -35,6 +38,7 @@ def get_option_setter(dataset_name):
 
 
 def create_dataset(opt):
+    # Создание а также инициализиция экземпляр выбранного датасета
     dataset = find_dataset_using_name(opt.dataset_mode)
     instance = dataset()
     instance.initialize(opt)
@@ -56,6 +60,7 @@ class CustomDatasetDataLoader(BaseDataLoader):
 
     def initialize(self, opt):
         BaseDataLoader.initialize(self, opt)
+        # настройка DataLoader
         self.dataset = create_dataset(opt)
         self.dataloader = torch.utils.data.DataLoader(
             self.dataset,
@@ -70,6 +75,7 @@ class CustomDatasetDataLoader(BaseDataLoader):
         return min(len(self.dataset), self.opt.max_dataset_size)
 
     def __iter__(self):
+        # Итерация по батчам
         for i, data in enumerate(self.dataloader):
             if i * self.opt.batch_size >= self.opt.max_dataset_size:
                 break
