@@ -5,7 +5,7 @@ import functools
 import torch.nn.functional as F
 from torch.optim import lr_scheduler
 
-
+#  типа нормализации
 def get_norm_layer(norm_type='instance'):
     if norm_type == 'batch':
         norm_layer = functools.partial(nn.BatchNorm2d, affine=True)
@@ -17,9 +17,10 @@ def get_norm_layer(norm_type='instance'):
         raise NotImplementedError('normalization layer [%s] is not found' % norm_type)
     return norm_layer
 
-
+# Настройка scheduler для изменения learning rate скорость обучений
 def get_scheduler(optimizer, opt):
     if opt.lr_policy == 'lambda':
+        # Линейное уменьшение lr после niter одределенного  эпохи
         def lambda_rule(epoch):
             lr_l = 1.0 - max(0, epoch + 1 + opt.epoch_count - opt.niter) / float(opt.niter_decay + 1)
             return lr_l
