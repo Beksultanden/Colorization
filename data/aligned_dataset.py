@@ -10,12 +10,17 @@ from PIL import Image
 class AlignedDataset(BaseDataset):
     @staticmethod
     def modify_commandline_options(parser, is_train):
+        # свои параметры
+        # стандартный parser
         return parser
 
     def initialize(self, opt):
+        # Сохранение параметров
         self.opt = opt
         self.root = opt.dataroot
+        # Папка с изображениями (train / val / test)
         self.dir_AB = os.path.join(opt.dataroot, opt.phase)
+        # Получаем список всех изображений
         self.AB_paths = sorted(make_dataset(self.dir_AB))
         assert(opt.resize_or_crop == 'resize_and_crop')
 
@@ -26,14 +31,17 @@ class AlignedDataset(BaseDataset):
         w2 = int(w / 2)
         A = AB.crop((0, 0, w2, h)).resize((self.opt.loadSize, self.opt.loadSize), Image.BICUBIC)
         B = AB.crop((w2, 0, w, h)).resize((self.opt.loadSize, self.opt.loadSize), Image.BICUBIC)
+        # Переводим в тензоры
         A = transforms.ToTensor()(A)
         B = transforms.ToTensor()(B)
+        # для аугментации
         w_offset = random.randint(0, max(0, self.opt.loadSize - self.opt.fineSize - 1))
         h_offset = random.randint(0, max(0, self.opt.loadSize - self.opt.fineSize - 1))
 
         A = A[:, h_offset:h_offset + self.opt.fineSize, w_offset:w_offset + self.opt.fineSize]
         B = B[:, h_offset:h_offset + self.opt.fineSize, w_offset:w_offset + self.opt.fineSize]
-
+        
+        # Нормализация в диапазон [-1, 1]
         A = transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))(A)
         B = transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))(B)
 
@@ -50,6 +58,7 @@ class AlignedDataset(BaseDataset):
             A = A.index_select(2, idx)
             B = B.index_select(2, idx)
 
+        # перевод RGB в grayscale
         if input_nc == 1:  # RGB to gray
             tmp = A[0, ...] * 0.299 + A[1, ...] * 0.587 + A[2, ...] * 0.114
             A = tmp.unsqueeze(0)
@@ -62,7 +71,21 @@ class AlignedDataset(BaseDataset):
                 'A_paths': AB_path, 'B_paths': AB_path}
 
     def __len__(self):
+        # Размер датасета
         return len(self.AB_paths)
 
     def name(self):
         return 'AlignedDataset'
+
+
+
+
+        # Определяем направление (A B или B A)
+         #if self.opt.which_direction == 'BtoA':
+             # input_nc = self.opt.output_nc
+            # output_nc = self.opt.input_nc
+        # else:
+            # input_nc = self.opt.input_nc
+            # output_nc = self.opt.output_nc
+
+       
