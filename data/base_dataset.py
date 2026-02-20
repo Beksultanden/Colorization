@@ -56,9 +56,10 @@ def get_transform(opt):
 def __adjust(img):
     ow, oh = img.size
 
-    # the size needs to be a multiple of this number,
-    # because going through generator network may change img size
-    # and eventually cause size mismatch error
+    # размер должен быть кратен этому числу,
+    # поскольку при прохождении через сеть генераторов размер изображения может измениться
+    # и в конечном итоге привести к ошибке несоответствия размера
+    
     mult = 4
     if ow % mult == 0 and oh % mult == 0:
         return img
@@ -76,9 +77,10 @@ def __adjust(img):
 def __scale_width(img, target_width):
     ow, oh = img.size
 
-    # the size needs to be a multiple of this number,
-    # because going through generator network may change img size
-    # and eventually cause size mismatch error
+    # размер должен быть кратен этому числу,
+    # поскольку при прохождении через сеть генераторов размер изображения может измениться
+    # и в конечном итоге привести к ошибке несоответствия размера
+    
     mult = 4
     assert target_width % mult == 0, "the target width needs to be multiple of %d." % mult
     if (ow == target_width and oh % mult == 0):
