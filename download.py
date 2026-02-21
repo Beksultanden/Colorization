@@ -19,6 +19,7 @@ def download_file_from_google_drive(id, destination):
     save_response_content(response, destination)
 
 def get_confirm_token(response):
+    # Извлекаем токен подтверждения из куки
     for key, value in response.cookies.items():
         if key.startswith('download_warning'):
             return value
@@ -40,12 +41,13 @@ parser.add_argument("--dataset_dir", type=str, default='data', help='training da
 args = parser.parse_args()
 
 if args.mode == 'pretrained-weight':
-
+# Скачиваем предобученные веса модели
     file_id = '1Xb-DKAA9ibCVLqm8teKd1MWk6imjwTBh'
     destination = 'checkpoints.zip'
     download_file_from_google_drive(file_id, destination)
 
 elif args.mode == 'cocostuff':
+    # Скачиваем  датасет
     print('download cocostuff training dataset')
     url = "http://images.cocodataset.org/zips/train2017.zip"
     response = requests.get(url, stream = True)
