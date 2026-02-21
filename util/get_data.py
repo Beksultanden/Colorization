@@ -9,21 +9,11 @@ from os.path import abspath, isdir, join, basename
 
 
 class GetData(object):
-    """
-
-    Download CycleGAN or Pix2Pix Data.
-
-    Args:
-        technique : str
-            One of: 'cyclegan' or 'pix2pix'.
-        verbose : bool
-            If True, print additional information.
-
-    Examples:
-        >>> from util.get_data import GetData
-        >>> gd = GetData(technique='cyclegan')
-        >>> new_data_path = gd.get(save_path='./datasets')  # options will be displayed.
-
+   """
+    класс для авто загрузки датасетов
+    для CycleGAN или Pix2Pix.
+    Он получает список доступных архивов, скачивает выбранный
+    датасет и распаковывает его.
     """
 
     def __init__(self, technique='cyclegan', verbose=True):
@@ -46,6 +36,7 @@ class GetData(object):
         return options
 
     def _present_options(self):
+        # показ доступных датасетов
         r = requests.get(self.url)
         options = self._get_options(r)
         print('Options:\n')
@@ -56,6 +47,7 @@ class GetData(object):
         return options[int(choice)]
 
     def _download_data(self, dataset_url, save_path):
+        # Скачиваем архив и распаковка
         if not isdir(save_path):
             os.makedirs(save_path)
 
@@ -80,22 +72,8 @@ class GetData(object):
 
     def get(self, save_path, dataset=None):
         """
-
-        Download a dataset.
-
-        Args:
-            save_path : str
-                A directory to save the data to.
-            dataset : str, optional
-                A specific dataset to download.
-                Note: this must include the file extension.
-                If None, options will be presented for you
-                to choose from.
-
-        Returns:
-            save_path_full : str
-                The absolute path to the downloaded data.
-
+        Основной метод загрузки датасета
+      
         """
         if dataset is None:
             selected_dataset = self._present_options()
@@ -103,7 +81,7 @@ class GetData(object):
             selected_dataset = dataset
 
         save_path_full = join(save_path, selected_dataset.split('.')[0])
-
+        # Если папка уже существует повторно не скачиваем
         if isdir(save_path_full):
             warn("\n'{0}' already exists. Voiding Download.".format(
                 save_path_full))
