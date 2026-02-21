@@ -2,9 +2,13 @@ from .base_options import BaseOptions
 
 
 class TrainOptions(BaseOptions):
+    # Настройки для обучения, тут задаются параметры тренировки stage, lr, эпохи,
+    # частота сохранения модели и отображения результатов.
     def initialize(self, parser):
         BaseOptions.initialize(self, parser)
+        # Выбор  обучения full / instance / fusion
         parser.add_argument('--stage', type=str, default='full', help='only full, instance or fusion')
+        # Папка датасета для обучения 
         parser.add_argument('--train_img_dir', type=str, default='train_data/train2017', help='training images folder')
         parser.add_argument('--model', type=str, default='train', help='only train_model need to be used')
         parser.add_argument('--name', type=str, default='coco_mask', help='name of the experiment. It decides where to store samples and models')
@@ -34,10 +38,14 @@ class TrainOptions(BaseOptions):
         self.isTrain = True
         return parser
 
+
+# Настройки для режима тестирования
+# Используются для загрузки модели и сохранения результатов
 class TestOptions(BaseOptions):
     def initialize(self, parser):
         BaseOptions.initialize(self, parser)
         parser.add_argument('--test_img_dir', type=str, default='example', help='testing images folder')
+        # Куда сохранять результаты
         parser.add_argument('--results_img_dir', type=str, default='results', help='save the results image folder')
         parser.add_argument('--name', type=str, default='test_fusion', help='name of the experiment. It decides where to store samples and models')
         parser.add_argument('--model', type=str, default='fusion',
