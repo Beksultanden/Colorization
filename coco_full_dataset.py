@@ -14,22 +14,24 @@ from image_util import read_to_pil  # убедись, что эта функци
 
 class CocoFullDataset(Data.Dataset):
     def __init__(self, opt):
+        # список всех файлов в директории
         self.IMAGE_DIR = opt.test_img_dir
         self.IMAGE_ID_LIST = [f for f in listdir(self.IMAGE_DIR) if isfile(join(self.IMAGE_DIR, f))]
-
+        # Базовые трансформации ресайз и перевод в тензор
         self.transforms = transforms.Compose([
             transforms.Resize((opt.fineSize, opt.fineSize), interpolation=2),
             transforms.ToTensor()
         ])
 
     def __getitem__(self, index):
+        # Загружаем фото по индексу и применяем трансформации
         image_path = join(self.IMAGE_DIR, self.IMAGE_ID_LIST[index])
         img = read_to_pil(image_path)  # загружаем изображение
         img_tensor = self.transforms(img)
 
         output = {
             'full_img': img_tensor,
-            'file_id': self.IMAGE_ID_LIST[index].split('.')[0]
+            'file_id': self.IMAGE_ID_LIST[index].split('.')[0] # имя файла без расширения
         }
         return output
 
