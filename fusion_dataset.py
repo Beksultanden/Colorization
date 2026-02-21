@@ -18,13 +18,17 @@ class Training_Full_Dataset(Data.Dataset):
     Download the training set from https://github.com/nightrome/cocostuff
     '''
     def __init__(self, opt):
+        # Папка с датасетом
         self.IMAGE_DIR = opt.train_img_dir
+        # Resize + перевод в тензор
         self.transforms = transforms.Compose([transforms.Resize((opt.fineSize, opt.fineSize), interpolation=2),
                                               transforms.ToTensor()])
+        # Список всех файлов
         self.IMAGE_ID_LIST = [f for f in listdir(self.IMAGE_DIR) if isfile(join(self.IMAGE_DIR, f))]
 
     def __getitem__(self, index):
         output_image_path = join(self.IMAGE_DIR, self.IMAGE_ID_LIST[index])
+        # Генерируем RGB и grayscale версии
         rgb_img, gray_img = gen_gray_color_pil(output_image_path)
         output = {}
         output['rgb_img'] = self.transforms(rgb_img)
@@ -36,16 +40,13 @@ class Training_Full_Dataset(Data.Dataset):
 
 
 class Training_Instance_Dataset(Data.Dataset):
-    '''
-    Training on COCOStuff dataset. [train2017.zip]
-    
-    Download the training set from https://github.com/nightrome/cocostuff
-
-    Make sure you've predicted all the images' bounding boxes using inference_bbox.py
-
-    It would be better if you can filter out the images which don't have any box.
-    '''
+     """
+    Датасет для instance stage.
+    Обучение идет не на всем изображении,
+    а на случайном объекте (bbox), предсказанном Mask R-CNN.
+    """
     def __init__(self, opt):
+        # Папка с предсказанными bounding box
         self.PRED_BBOX_DIR = '{0}_bbox'.format(opt.train_img_dir)
         self.IMAGE_DIR = opt.train_img_dir
         self.IMAGE_ID_LIST = [f for f in listdir(self.IMAGE_DIR) if isfile(join(self.IMAGE_DIR, f))]
@@ -58,7 +59,7 @@ class Training_Instance_Dataset(Data.Dataset):
         pred_info_path = join(self.PRED_BBOX_DIR, self.IMAGE_ID_LIST[index].split('.')[0] + '.npz')
         output_image_path = join(self.IMAGE_DIR, self.IMAGE_ID_LIST[index])
         pred_bbox = gen_maskrcnn_bbox_fromPred(pred_info_path)
-
+        # Получаем RGB и grayscale
         rgb_img, gray_img = gen_gray_color_pil(output_image_path)
 
         index_list = range(len(pred_bbox))
