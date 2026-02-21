@@ -4,29 +4,38 @@ import os
 
 
 class HTML:
+    #  класс нужен для автоматического создания html страницы
+    # с результатами обучения изображения 
+    # Используется для удобного просмотра результатов модели в браузере
     def __init__(self, web_dir, title, reflesh=0):
         self.title = title
         self.web_dir = web_dir
+        # Папка для foto
         self.img_dir = os.path.join(self.web_dir, 'images')
         if not os.path.exists(self.web_dir):
             os.makedirs(self.web_dir)
         if not os.path.exists(self.img_dir):
             os.makedirs(self.img_dir)
         # print(self.img_dir)
-
+        
+        # Создаем html документ
         self.doc = dominate.document(title=title)
+        # Автообновление страницы
         if reflesh > 0:
             with self.doc.head:
                 meta(http_equiv="reflesh", content=str(reflesh))
 
     def get_image_dir(self):
+        # Возвращает путь к папке с изображениями
         return self.img_dir
 
     def add_header(self, str):
+       # заголовок на страницу
         with self.doc:
             h3(str)
 
     def add_table(self, border=1):
+        # таблицу для размещения изображений
         self.t = table(border=border, style="table-layout: fixed;")
         self.doc.add(self.t)
 
@@ -43,6 +52,7 @@ class HTML:
                             p(txt)
 
     def save(self):
+        # Сохраняем html файл
         html_file = '%s/index.html' % self.web_dir
         f = open(html_file, 'wt')
         f.write(self.doc.render())
