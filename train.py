@@ -12,6 +12,8 @@ from fusion_dataset import *
 from util import util
 import os
 
+# Основной скрипт обучения модели, в зависимости от выбранной стадии full,  instance,  fusion, цикл обучения.
+# Выбираем датасет в зависимости от stage
 if __name__ == '__main__':
     opt = TrainOptions().parse()
     if opt.stage == 'full':
@@ -28,15 +30,16 @@ if __name__ == '__main__':
     dataset_size = len(dataset)
     print('#training images = %d' % dataset_size)
 
-    model = create_model(opt)
+    model = create_model(opt) # Создаем модель
     #model.setup(opt)
     opt.continue_train = False  # Отключаем загрузку весов
     model.setup(opt)
-
+    # Визуализация обучения
     opt.display_port = 8098
     visualizer = Visualizer(opt)
     total_steps = 0
 
+    #  обучения на полных картинках или отдельных объектах
     if opt.stage == 'full' or opt.stage == 'instance':
         for epoch in trange(opt.epoch_count, opt.niter + opt.niter_decay, desc='epoch', dynamic_ncols=True):
             epoch_iter = 0
@@ -44,7 +47,7 @@ if __name__ == '__main__':
             for data_raw in tqdm(dataset_loader, desc='batch', dynamic_ncols=True, leave=False):
                 total_steps += opt.batch_size
                 epoch_iter += opt.batch_size
-
+                # Подготовка входных данных 
                 data_raw['rgb_img'] = [data_raw['rgb_img']]
                 data_raw['gray_img'] = [data_raw['gray_img']]
 
@@ -54,14 +57,17 @@ if __name__ == '__main__':
                     continue
                 if(gt_data['B'].shape[0] < opt.batch_size):
                     continue
+                # Передаем ground truth в модель
                 input_data['B'] = gt_data['B']
                 input_data['hint_B'] = gt_data['hint_B']
                 input_data['mask_B'] = gt_data['mask_B']
 
+                # Один шаг оптимизации весов
                 visualizer.reset()
                 model.set_input(input_data)
                 model.optimize_parameters()
 
+                # Периодически обновление графики и фото в браузере
                 if total_steps % opt.display_freq == 0:
                     save_result = total_steps % opt.update_html_freq == 0
                     visualizer.display_current_results(model.get_current_visuals(), epoch, save_result)
@@ -71,10 +77,12 @@ if __name__ == '__main__':
                     if opt.display_id > 0:
                         visualizer.plot_current_losses(epoch, float(epoch_iter) / dataset_size, opt, losses)
 
+            # Сохранение чекпоинты в конце каждой эпохи
             if epoch % opt.save_epoch_freq == 0:
                 model.save_networks('latest')
                 model.save_networks(epoch)
             model.update_learning_rate()
+    #  Fusion объединение инфо об объектах 
     elif opt.stage == 'fusion':
         for epoch in trange(opt.epoch_count, opt.niter + opt.niter_decay, desc='epoch', dynamic_ncols=True):
             epoch_iter = 0
@@ -82,6 +90,7 @@ if __name__ == '__main__':
             for data_raw in tqdm(dataset_loader, desc='batch', dynamic_ncols=True, leave=False):
                 total_steps += opt.batch_size
                 epoch_iter += opt.batch_size
+                # Извлекчение информацию о боксах разных масштабов
                 box_info = data_raw['box_info'][0]
                 box_info_2x = data_raw['box_info_2x'][0]
                 box_info_4x = data_raw['box_info_4x'][0]
@@ -92,6 +101,7 @@ if __name__ == '__main__':
                 full_gt_data = util.get_colorization_data(data_raw['full_rgb'], opt, p=1.0, ab_thresh=10.0)
                 if cropped_gt_data is None or full_gt_data is None:
                     continue
+                # Пропуск если данные не подгрузились
                 cropped_input_data['B'] = cropped_gt_data['B']
                 full_input_data['B'] = full_gt_data['B']
                 visualizer.reset()
