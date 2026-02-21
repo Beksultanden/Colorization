@@ -11,6 +11,7 @@ def gen_gray_color_pil(color_img_path):
     if len(np.asarray(rgb_img).shape) == 2:
         rgb_img = np.stack([np.asarray(rgb_img), np.asarray(rgb_img), np.asarray(rgb_img)], 2)
         rgb_img = Image.fromarray(rgb_img)
+        # Перевод в grayscale
     gray_img = np.round(color.rgb2gray(np.asarray(rgb_img)) * 255.0).astype(np.uint8)
     gray_img = np.stack([gray_img, gray_img, gray_img], -1)
     gray_img = Image.fromarray(gray_img)
@@ -46,6 +47,7 @@ def gen_maskrcnn_bbox_fromPred(pred_data_path, box_num_upbound=-1):
     return pred_bbox
 
 def get_box_info(pred_bbox, original_shape, final_size):
+    # Пересчитываем координаты bbox из оригинального разрешения в разрешение модели
     assert len(pred_bbox) == 4
     resize_startx = int(pred_bbox[0] / original_shape[0] * final_size)
     resize_starty = int(pred_bbox[1] / original_shape[1] * final_size)
@@ -65,6 +67,7 @@ def get_box_info(pred_bbox, original_shape, final_size):
         else:
             resize_starty -= 1
         rw = 1
+    # padding для выравнивания инстанса в тензоре
     L_pad = resize_startx
     R_pad = final_size - resize_endx
     T_pad = resize_starty
