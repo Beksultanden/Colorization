@@ -25,25 +25,29 @@ class TrainModel(BaseModel):
 
     def initialize(self, opt):
         BaseModel.initialize(self, opt)
-        self.loss_names = ['G', 'L1']
+        self.loss_names = ['G', 'L1'] # Какие лоссы будем отслеживать
         # load/define networks
         num_in = opt.input_nc + opt.output_nc + 1
         self.optimizers = []
         if opt.stage == 'full' or opt.stage == 'instance':
             self.model_names = ['G']
+            # Основной generator SIGGRAPH
             self.netG = networks.define_G(num_in, opt.output_nc, opt.ngf,
                                         'siggraph', opt.norm, not opt.no_dropout, opt.init_type, self.gpu_ids,
                                         use_tanh=True, classification=opt.classification)
+            # Оптимизатор для G
             self.optimizer_G = torch.optim.Adam(self.netG.parameters(),
                                                 lr=opt.lr, betas=(opt.beta1, 0.999))
             self.optimizers.append(self.optimizer_G)
         elif opt.stage == 'fusion':
             self.model_names = ['G', 'GF', 'GComp']
+            # Instance generator
             self.netG = networks.define_G(num_in, opt.output_nc, opt.ngf,
                                         'instance', opt.norm, not opt.no_dropout, opt.init_type, self.gpu_ids,
                                         use_tanh=True, classification=False)
             self.netG.eval()
-            
+
+            # Fusion generator объединение instance + background
             self.netGF = networks.define_G(num_in, opt.output_nc, opt.ngf,
                                         'fusion', opt.norm, not opt.no_dropout, opt.init_type, self.gpu_ids,
                                         use_tanh=True, classification=False)
@@ -84,6 +88,7 @@ class TrainModel(BaseModel):
             self.avg_losses[loss_name] = 0
         
     def set_input(self, input):
+         # Получаем входные данные
         AtoB = self.opt.which_direction == 'AtoB'
         self.real_A = input['A' if AtoB else 'B'].to(self.device)
         self.real_B = input['B' if AtoB else 'A'].to(self.device)
@@ -92,6 +97,7 @@ class TrainModel(BaseModel):
         self.mask_B = input['mask_B'].to(self.device)
         self.mask_B_nc = self.mask_B + self.opt.mask_cent
 
+        # Кодируем ab каналы в индексы
         self.real_B_enc = util.encode_ab_ind(self.real_B[:, :, ::4, ::4], self.opt)
     
     def set_fusion_input(self, input, box_info):
@@ -108,10 +114,12 @@ class TrainModel(BaseModel):
 
     def forward(self):
         if self.opt.stage == 'full' or self.opt.stage == 'instance':
+            # Предсказание ab каналов
             (_, self.fake_B_reg) = self.netG(self.real_A, self.hint_B, self.mask_B)
         elif self.opt.stage == 'fusion':
             (_, self.comp_B_reg) = self.netGComp(self.full_real_A, self.full_hint_B, self.full_mask_B)
             (_, feature_map) = self.netG(self.real_A, self.hint_B, self.mask_B)
+             # Финальное fusion объединение
             self.fake_B_reg = self.netGF(self.full_real_A, self.full_hint_B, self.full_mask_B, feature_map, self.box_info_list)
         else:
             print('Error! Wrong stage selection!')
@@ -120,6 +128,7 @@ class TrainModel(BaseModel):
     def optimize_parameters(self):
         self.forward()
         self.optimizer_G.zero_grad()
+        # L1 / Huber loss между предсказанными и реальными ab каналами
         if self.opt.stage == 'full' or self.opt.stage == 'instance':
             self.loss_L1 = torch.mean(self.criterionL1(self.fake_B_reg.type(torch.cuda.FloatTensor),
                                                         self.real_B.type(torch.cuda.FloatTensor)))
@@ -133,10 +142,13 @@ class TrainModel(BaseModel):
         else:
             print('Error! Wrong stage selection!')
             exit()
+        # Общий loss
         self.loss_G.backward()
         self.optimizer_G.step()
 
     def get_current_visuals(self):
+    # формирование фото для отображения во время обучения, предсказанное моделью и вспомогательные карты ab, hint
+    
         from collections import OrderedDict
         visual_ret = OrderedDict()
         if self.opt.stage == 'full' or self.opt.stage == 'instance':
