@@ -3,6 +3,7 @@ import torch
 
 
 class ImagePool():
+    """ Буфер для хранения ранее сгенерированных изображений """
     def __init__(self, pool_size):
         self.pool_size = pool_size
         if self.pool_size > 0:
@@ -10,6 +11,7 @@ class ImagePool():
             self.images = []
 
     def query(self, images):
+        # Если размер пула 0, просто пробрасываем картинки дальше
         if self.pool_size == 0:
             return images
         return_images = []
@@ -28,5 +30,6 @@ class ImagePool():
                     return_images.append(tmp)
                 else:
                     return_images.append(image)
+        # Собираем всё в один батч
         return_images = torch.cat(return_images, 0)
         return return_images
