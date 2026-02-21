@@ -26,14 +26,16 @@ def get_scheduler(optimizer, opt):
             return lr_l
         scheduler = lr_scheduler.LambdaLR(optimizer, lr_lambda=lambda_rule)
     elif opt.lr_policy == 'step':
+         # Уменьшение lr каждые lr_decay_iters эпох
         scheduler = lr_scheduler.StepLR(optimizer, step_size=opt.lr_decay_iters, gamma=0.1)
     elif opt.lr_policy == 'plateau':
+        # Уменьшение lr если метрика не улучшается
         scheduler = lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.2, threshold=0.01, patience=5)
     else:
         return NotImplementedError('learning rate policy [%s] is not implemented', opt.lr_policy)
     return scheduler
 
-
+# Инициализация весов сети
 def init_weights(net, init_type='xavier', gain=0.02):
     def init_func(m):
         classname = m.__class__.__name__
@@ -50,6 +52,7 @@ def init_weights(net, init_type='xavier', gain=0.02):
                 raise NotImplementedError('initialization method [%s] is not implemented' % init_type)
             if hasattr(m, 'bias') and m.bias is not None:
                 init.constant_(m.bias.data, 0.0)
+        # инициализация для BatchNorm
         elif classname.find('BatchNorm2d') != -1:
             init.normal_(m.weight.data, 1.0, gain)
             init.constant_(m.bias.data, 0.0)
@@ -57,7 +60,7 @@ def init_weights(net, init_type='xavier', gain=0.02):
     print('initialize network with %s' % init_type)
     net.apply(init_func)
 
-
+# Перенос модели на GPU
 def init_net(net, init_type='xavier', gpu_ids=[]):
     if len(gpu_ids) > 0:
         assert(torch.cuda.is_available())
@@ -66,7 +69,7 @@ def init_net(net, init_type='xavier', gpu_ids=[]):
     init_weights(net, init_type)
     return net
 
-
+# Generator в зависимости от выбранной архитектуры
 def define_G(input_nc, output_nc, ngf, which_model_netG, norm='batch', use_dropout=False, init_type='xavier', gpu_ids=[], use_tanh=True, classification=True):
     netG = None
     norm_layer = get_norm_layer(norm_type=norm)
@@ -81,7 +84,7 @@ def define_G(input_nc, output_nc, ngf, which_model_netG, norm='batch', use_dropo
         raise NotImplementedError('Generator model name [%s] is not recognized' % which_model_netG)
     return init_net(netG, init_type, gpu_ids)
 
-
+# Huber Loss более устойчива к выбросам чем MSE
 class HuberLoss(nn.Module):
     def __init__(self, delta=.01):
         super(HuberLoss, self).__init__()
@@ -94,17 +97,19 @@ class HuberLoss(nn.Module):
         mask[...] = mann < self.delta
 
         # loss = eucl*mask + self.delta*(mann-.5*self.delta)*(1-mask)
+        # Квадратичная часть для малых ошибок,
+        # линейная — для больших
         loss = eucl*mask/self.delta + (mann-.5*self.delta)*(1-mask)
         return torch.sum(loss,dim=1,keepdim=True)
 
-
+# Обычный L1 Loss
 class L1Loss(nn.Module):
     def __init__(self):
         super(L1Loss, self).__init__()
 
     def __call__(self, in0, in1):
         return torch.sum(torch.abs(in0-in1),dim=1,keepdim=True)
-
+# CBAM Attention Module (Channel + Spatial attention)
 class CBAM(nn.Module):
     def __init__(self, channels, reduction=16):
         super(CBAM, self).__init__()
@@ -118,7 +123,7 @@ class CBAM(nn.Module):
         )
 
         self.sigmoid_channel = nn.Sigmoid()
-
+        # Spatial attention
         self.conv_spatial = nn.Conv2d(2, 1, kernel_size=7, padding=3, bias=False)
         self.sigmoid_spatial = nn.Sigmoid()
 
@@ -136,7 +141,7 @@ class CBAM(nn.Module):
         spatial = self.sigmoid_spatial(self.conv_spatial(spatial))
         x = x * spatial
         return x
-
+# модель
 class SIGGRAPHGenerator(nn.Module):
     def __init__(self, input_nc, output_nc, norm_layer=nn.BatchNorm2d, use_tanh=True, classification=True):
         super(SIGGRAPHGenerator, self).__init__()
@@ -316,6 +321,7 @@ class SIGGRAPHGenerator(nn.Module):
 class WeightGenerator(nn.Module):
     def __init__(self, input_ch, inner_ch=16):
         super(WeightGenerator, self).__init__()
+         # Генерация маски для instance объектов
         self.simple_instance_conv = nn.Sequential(
             nn.Conv2d(input_ch, inner_ch, kernel_size=3, stride=1, padding=1),
             nn.ReLU(True),
@@ -324,7 +330,7 @@ class WeightGenerator(nn.Module):
             nn.Conv2d(inner_ch, 1, kernel_size=3, stride=1, padding=1),
             nn.ReLU(True),
         )
-
+        # Генерация маски для фонового признака
         self.simple_bg_conv = nn.Sequential(
             nn.Conv2d(input_ch, inner_ch, kernel_size=3, stride=1, padding=1),
             nn.ReLU(True),
@@ -335,7 +341,7 @@ class WeightGenerator(nn.Module):
         )
 
         self.normalize = nn.Softmax(1)
-    
+     # feature map под нужный размер также позицию bbox
     def resize_and_pad(self, feauture_maps, info_array):
         feauture_maps = torch.nn.functional.interpolate(feauture_maps, size=(info_array[5], info_array[4]), mode='bilinear')
         feauture_maps = torch.nn.functional.pad(feauture_maps, (info_array[0], info_array[1], info_array[2], info_array[3]), "constant", 0)
