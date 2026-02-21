@@ -10,6 +10,7 @@ import cv2
 # Converts a Tensor into an image array (numpy)
 # |imtype|: the desired type of the converted numpy array
 def tensor2im(input_image, imtype=np.uint8):
+    # Конвертируем тензор PyTorch в обычную картинку numpy
     if isinstance(input_image, torch.Tensor):
         image_tensor = input_image.data
     else:
@@ -22,6 +23,7 @@ def tensor2im(input_image, imtype=np.uint8):
 
 
 def diagnose_network(net, name='network'):
+    # Считаем средний градиент
     mean = 0.0
     count = 0
     for param in net.parameters():
@@ -40,6 +42,7 @@ def save_image(image_numpy, image_path):
 
 
 def print_numpy(x, val=True, shp=False):
+    # Вывод статистики по массиву среднее, мин
     x = x.astype(np.float64)
     if shp:
         print('shape,', x.shape)
