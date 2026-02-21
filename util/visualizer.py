@@ -20,6 +20,7 @@ def save_images(webpage, visuals, image_path, aspect_ratio=1.0, width=256):
         im = util.tensor2im(im_data)
         image_name = '%s_%s.png' % (name, label)
         save_path = os.path.join(image_dir, image_name)
+        # Меняем размер если задано соотношение сторон
         h, w, _ = im.shape
         if aspect_ratio > 1.0:
             im = resize(im, (h, int(w * aspect_ratio)))
@@ -41,11 +42,12 @@ class Visualizer():
         self.name = opt.name
         self.opt = opt
         self.saved = False
+        # Настройка Visdom для отображения графиков в обучени моделя
         if self.display_id > 0:
             import visdom
             self.ncols = opt.display_ncols
             self.vis = visdom.Visdom(server=opt.display_server, port=opt.display_port)
-
+        # папки для логов и картинок
         if self.use_html:
             self.web_dir = os.path.join(opt.checkpoints_dir, opt.name, 'web')
             self.img_dir = os.path.join(self.web_dir, 'images')
@@ -78,6 +80,7 @@ class Visualizer():
                 for label, image in visuals.items():
                     image_numpy = util.tensor2im(image)
                     label_html_row += '<td>%s</td>' % label
+                    # пустые ячейки в таблице
                     images.append(image_numpy.transpose([2, 0, 1]))
                     idx += 1
                     if idx % ncols == 0:
